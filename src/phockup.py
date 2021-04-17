@@ -74,9 +74,7 @@ class Phockup():
 
                 filepath = os.path.join(root, filename)
 
-                #self.process_file(filepath)
-
-                files_temp.append(filename)
+                files_temp.append(filepath)
 
                 files = files_temp
                 files.sort()
