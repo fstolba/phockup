@@ -112,6 +112,9 @@ Instead of copying the process will create hard link all files from the INPUTDIR
 ### Original filenames
 Organize the files in selected format or using the default year/month/day format but keep original filenames by using the flag `-o | --original-names`.
 
+### Speed up with multithreading
+Set the argument `-x | --threads=` to speed up the processing time. Reasonable numbers go from `2` to `8` threads. You should set the number of threads based on the number of cores on your processor. Note that using threads increases cpu and disk usage and may impact the performance of other processes. 
+
 ### Fix incorrect dates
 If date extracted from photos is incorrect, you can use the `-f | --date-field` option to set the correct exif field to get date information from. Use this command to list which fields are available for a file:
 ```

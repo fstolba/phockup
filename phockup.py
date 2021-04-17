@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-import argparse
+import getopt
 import os
 import re
 import sys
 
 from src.date import Date
 from src.dependency import check_dependencies
+from src.help import help
 from src.phockup import Phockup
 from src.printer import Printer
 
@@ -56,13 +57,11 @@ Supported formats:
     DD   - 27, 28, 29 ... (day of month)
     DDD  - 123, 158, 365 ... (day of year)
 
-Example:
-    YYYY/MM/DD -> 2011/07/17
-    YYYY/M/DD  -> 2011/July/17
-    YYYY/m/DD  -> 2011/Jul/17
-    YY/m-DD    -> 11/Jul-17
-        """,
-    )
+    try:
+        opts, args = getopt.getopt(argv[2:], "d:r:mltoh", ["date=", "regex=", "move", "link", "original-names", "timestamp", "help"])
+    except getopt.GetoptError:
+        help(version)
+        sys.exit(2)
 
     exclusive_group = parser.add_mutually_exclusive_group()
 
@@ -125,11 +124,20 @@ nevertheless it can be useful if no other date information can be obtained.
         action="store",
         type=re.compile,
         help="""Specify date format for date extraction from filenames if there is no EXIF date information.
-
-Example:
+    Example:
     {regex}
     can be used to extract the date from file names like the following IMG_27.01.2015-19.20.00.jpg.
         """,
+    )
+
+    parser.add_argument(
+        "-x",
+        "--threads",
+        action="store",
+        type=int,
+        default=os.cpu_count(),
+        choices=range(1,129),
+        help="Number of threads to use (defaults to number of CPU cores).",
     )
 
     parser.add_argument(
@@ -157,8 +165,7 @@ To get all date fields available for a file, do:
         "-q",
         "--quiet",
         action="store_true",
-        help="""Run without output
-        """,
+        help="Run without output",
     )
 
     parser.add_argument(
@@ -186,7 +193,8 @@ To get all date fields available for a file, do:
         date_field=args.date_field,
         dry_run=args.dry_run,
         quiet=args.quiet,
-        max_depth=args.maxdepth
+        max_depth=args.maxdepth,
+        threads=args.threads,
     )
 
 

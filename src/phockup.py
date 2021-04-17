@@ -14,23 +14,24 @@ ignored_files = (".DS_Store", "Thumbs.db")
 
 
 class Phockup():
-    def __init__(self, input_dir, output_dir, **args):
-        input_dir = os.path.expanduser(input_dir)
-        output_dir = os.path.expanduser(output_dir)
+    def __init__(self, input, output, **args):
+        input = os.path.expanduser(input)
+        output = os.path.expanduser(output)
 
-        if input_dir.endswith(os.path.sep):
-            input_dir = input_dir[:-1]
-        if output_dir.endswith(os.path.sep):
-            output_dir = output_dir[:-1]
+        if input.endswith(os.path.sep):
+            input = input[:-1]
+        if output.endswith(os.path.sep):
+            output = output[:-1]
 
-        self.input_dir = input_dir
-        self.output_dir = output_dir
-        self.dir_format = args.get('dir_format') or os.path.sep.join(['%Y', '%m', '%d'])
+        self.input = input
+        self.output = output
+        self.dir_format = args.get('dir_format', os.path.sep.join(['%Y', '%m', '%d']))
         self.move = args.get('move', False)
         self.link = args.get('link', False)
         self.original_filenames = args.get('original_filenames', False)
         self.date_regex = args.get('date_regex', None)
         self.timestamp = args.get('timestamp', False)
+        self.threads = max(1, args.get('threads', 1))
         self.date_field = args.get('date_field', False)
         self.dry_run = args.get('dry_run', False)
         self.max_depth = args.get('max_depth', -1)
@@ -154,6 +155,12 @@ class Phockup():
         suffix = 1
         target_file = target_file_path
 
+        lock = threading.Lock()
+        lock.acquire()
+
+        targets = self.targets
+        action = False
+
         while True:
             if os.path.isfile(target_file):
                 if self.checksum(filename) == self.checksum(target_file):
@@ -180,6 +187,8 @@ class Phockup():
                 printer.line(' => %s' % target_file)
                 self.process_xmp(filename, target_file_name, suffix, output)
                 break
+
+            lock.release()
 
             suffix += 1
             target_split = os.path.splitext(target_file_path)
