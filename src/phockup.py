@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import sys
+import threading
 
 from src.date import Date
 from src.exif import Exif
@@ -14,17 +15,17 @@ ignored_files = (".DS_Store", "Thumbs.db")
 
 
 class Phockup():
-    def __init__(self, input, output, **args):
-        input = os.path.expanduser(input)
-        output = os.path.expanduser(output)
+    def __init__(self, input_dir, output_dir, **args):
+        input_dir = os.path.expanduser(input_dir)
+        output_dir = os.path.expanduser(output_dir)
 
-        if input.endswith(os.path.sep):
-            input = input[:-1]
-        if output.endswith(os.path.sep):
-            output = output[:-1]
+        if input_dir.endswith(os.path.sep):
+            input_dir = input_dir[:-1]
+        if output_dir.endswith(os.path.sep):
+            output_dir = output_dir[:-1]
 
-        self.input = input
-        self.output = output
+        self.input_dir = input_dir
+        self.output_dir = output_dir
         self.dir_format = args.get('dir_format', os.path.sep.join(['%Y', '%m', '%d']))
         self.move = args.get('move', False)
         self.link = args.get('link', False)
@@ -64,6 +65,7 @@ class Phockup():
         """
         Walk input directory recursively and call process_file for each file except the ignored ones
         """
+        files_temp = []
         for root, dirnames, files in os.walk(self.input_dir):
             files.sort()
             for filename in files:
@@ -71,9 +73,41 @@ class Phockup():
                     continue
 
                 filepath = os.path.join(root, filename)
-                self.process_file(filepath)
-            if root.count(os.sep) >= self.stop_depth:
-                del dirnames[:]
+
+                #self.process_file(filepath)
+
+                files_temp.append(filename)
+
+                files = files_temp
+                files.sort()
+                num_files = len(files)
+                num_threads = min(self.threads, num_files)
+
+                if num_threads > 1:
+                    threads = []
+                    for i in range(0, num_threads):
+                        files_part = files[i::num_threads]
+                        thread = threading.Thread(target=self.process_file_worker, args=(files_part,))
+                        threads.append(thread)
+                        thread.start()
+
+                    for thread in threads:
+                        thread.join()
+
+                    printer.line('%s files processed using %s threads' % (num_files, num_threads))
+                else:
+                    self.process_file_worker(files)
+                    printer.line('%s file(s) processed' % (num_files))
+                if root.count(os.sep) >= self.stop_depth:
+                    del dirnames[:]
+
+    def process_file_worker(self, files):
+        """
+        Thread worker to call process_file for each file on a set
+        """
+        for file in files:
+            self.process_file(file)
+        return
 
     def checksum(self, filename):
         """
@@ -157,9 +191,6 @@ class Phockup():
 
         lock = threading.Lock()
         lock.acquire()
-
-        targets = self.targets
-        action = False
 
         while True:
             if os.path.isfile(target_file):
