@@ -41,6 +41,14 @@ class Phockup():
         self.stop_depth = self.input_dir.count(os.sep) + self.max_depth if self.max_depth > -1 else sys.maxsize
         self.quiet = args.get('quiet', False)
 
+        self.targets = {}
+        if self.move:
+            self.action = shutil.move
+        elif self.link:
+            self.action = os.link
+        else:
+            self.action = shutil.copy2
+
         printer.should_print(self.quiet)
 
         self.check_directories()
@@ -184,41 +192,42 @@ class Phockup():
         suffix = 1
         target_file = target_file_path
 
-        with Phockup.lock:
-            out_line = '{}'''.format(filename)
+        lock = threading.Lock()
+        lock.acquire()
 
-            while os.path.isfile(target_file):
-                if self.checksum(filename) == self.checksum(target_file):
-                    out_line += ' => skipped, duplicated file {}'.format(target_file)
-                    printer.line(out_line)
-                    return
-                else:
-                    suffix += 1
-                    target_split = os.path.splitext(target_file_path)
-                    target_file = "%s-%d%s" % (target_split[0], suffix, target_split[1])
+        targets = self.targets
+        action = False
 
-            if self.move:
-                try:
-                    if not self.dry_run:
-                        shutil.move(filename, target_file)
-                        out_line += ' => {}'.format(target_file)
-                except FileNotFoundError:
-                    out_line += ' => skipped, no such file or directory'
+        while True:
+            if os.path.isfile(target_file):
+                targets[target_file] = target_file
 
-            elif self.link and not self.dry_run:
-                os.link(filename, target_file)
-                out_line += ' => {}'.format(target_file)
+            target_source = targets.get(target_file)
+            if target_source:
+                if self.checksum(filename) == self.checksum(target_source):
+                    printer.line('%s => skipped, duplicated file %s' % (filename, target_file))
+                    break
 
             else:
-                try:
-                    if not self.dry_run:
-                        shutil.copy2(filename, target_file)
-                        out_line += ' => {}'.format(target_file)
-                except FileNotFoundError:
-                    out_line += ' => skipped, no such file or directory'
+                targets[target_file] = filename
+                action = True
+                break
 
-        printer.line(out_line)
-        self.process_xmp(filename, target_file_name, suffix, output)
+            suffix += 1
+            target_split = os.path.splitext(target_file_path)
+            target_file = "%s-%d%s" % (target_split[0], suffix, target_split[1])
+
+        lock.release()
+
+        if action:
+            try:
+                printer.line('%s => %s' % (filename, target_file))
+                os.makedirs(output, exist_ok=True)
+                self.action(filename, target_file)
+                self.process_xmp(filename, target_file_name, suffix, output)
+            except FileNotFoundError:
+                printer.line('%s => skipped, no such file or directory' % filename)
+
 
     def get_file_name_and_path(self, filename):
         """
