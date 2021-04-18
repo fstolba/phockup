@@ -268,13 +268,14 @@ class Phockup():
             xmp_target = '%s%s.xmp' % (os.path.splitext(file_name)[0], suffix)
             xmp_files[xmp_original_without_ext] = xmp_target
 
-        for xmp_original, target in xmp_files.items():
+        for original, target in xmp_files.items():
             xmp_path = os.path.sep.join([output, target])
-            printer.line('%s => %s' % (xmp_original, xmp_path))
+            printer.line('%s => %s' % (original, xmp_path))
 
-            if self.move:
-                shutil.move(xmp_original, xmp_path)
-            elif self.link:
-                os.link(xmp_original, xmp_path)
-            else:
-                shutil.copy2(xmp_original, xmp_path)
+            if not self.dry_run:
+                if self.move:
+                    shutil.move(original, xmp_path)
+                elif self.link:
+                    os.link(original, xmp_path)
+                else:
+                    shutil.copy2(original, xmp_path)
