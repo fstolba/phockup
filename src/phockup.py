@@ -193,9 +193,9 @@ class Phockup():
                     printer.line(out_line)
                     return
                 else:
+                    suffix += 1
                     target_split = os.path.splitext(target_file_path)
                     target_file = "%s-%d%s" % (target_split[0], suffix, target_split[1])
-                    suffix += 1
 
             if self.move:
                 try:
