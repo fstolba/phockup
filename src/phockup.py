@@ -272,5 +272,9 @@ class Phockup():
             xmp_path = os.path.sep.join([output, target])
             printer.line('%s => %s' % (original, xmp_path))
 
-            if self.action:
-                self.action(original, xmp_path)
+            if self.move:
+                shutil.move(xmp_original, xmp_path)
+            elif self.link:
+                os.link(xmp_original, xmp_path)
+            else:
+                shutil.copy2(xmp_original, xmp_path)
