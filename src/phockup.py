@@ -48,6 +48,8 @@ class Phockup():
             self.action = os.link
         else:
             self.action = shutil.copy2
+        if self.dry_run:
+            self.action = None
 
         printer.should_print(self.quiet)
 
@@ -270,10 +272,5 @@ class Phockup():
             xmp_path = os.path.sep.join([output, target])
             printer.line('%s => %s' % (original, xmp_path))
 
-            if not self.dry_run:
-                if self.move:
-                    shutil.move(original, xmp_path)
-                elif self.link:
-                    os.link(original, xmp_path)
-                else:
-                    shutil.copy2(original, xmp_path)
+            if self.action:
+                self.action(original, xmp_path)
