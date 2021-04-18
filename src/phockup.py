@@ -24,9 +24,10 @@ class Phockup():
         if output_dir.endswith(os.path.sep):
             output_dir = output_dir[:-1]
 
+        self.lock = threading.Lock()
         self.input_dir = input_dir
         self.output_dir = output_dir
-        self.dir_format = args.get('dir_format', os.path.sep.join(['%Y', '%m', '%d']))
+        self.dir_format = args.get('dir_format') or os.path.sep.join(['%Y', '%m', '%d'])
         self.move = args.get('move', False)
         self.link = args.get('link', False)
         self.original_filenames = args.get('original_filenames', False)
@@ -179,49 +180,47 @@ class Phockup():
         if str.endswith(filename, '.xmp'):
             return None
 
-        lock = threading.Lock()
-        lock.acquire()
-
-        out_line = '{}'''.format(filename)
-
         output, target_file_name, target_file_path = self.get_file_name_and_path(filename)
 
         suffix = 1
         target_file = target_file_path
 
-        while True:
-            if os.path.isfile(target_file):
-                if self.checksum(filename) == self.checksum(target_file):
-                    out_line += ' => skipped, duplicated file {}'.format(target_file)
-                    break
-            else:
-                if self.move:
-                    try:
-                        if not self.dry_run:
-                            shutil.move(filename, target_file)
-                    except FileNotFoundError:
-                        out_line += ' => skipped, no such file or directory'
-                        break
-                elif self.link and not self.dry_run:
-                    os.link(filename, target_file)
-                else:
-                    try:
-                        if not self.dry_run:
-                            shutil.copy2(filename, target_file)
-                    except FileNotFoundError:
-                        out_line += ' => skipped, no such file or directory'
-                        break
+        self.lock.acquire()
 
+        out_line = '{}'''.format(filename)
+
+        if os.path.isfile(target_file):
+            if self.checksum(filename) == self.checksum(target_file):
+                out_line += ' => skipped, duplicated file {}'.format(target_file)
+        else:
+            if self.move:
+                try:
+                    if not self.dry_run:
+                        shutil.move(filename, target_file)
+                        out_line += ' => {}'.format(target_file)
+                except FileNotFoundError:
+                    out_line += ' => skipped, no such file or directory'
+
+            elif self.link and not self.dry_run:
+                os.link(filename, target_file)
                 out_line += ' => {}'.format(target_file)
-                printer.line(out_line)
-                self.process_xmp(filename, target_file_name, suffix, output)
-                break
 
-            lock.release()
+            else:
+                try:
+                    if not self.dry_run:
+                        shutil.copy2(filename, target_file)
+                        out_line += ' => {}'.format(target_file)
+                except FileNotFoundError:
+                    out_line += ' => skipped, no such file or directory'
 
-            suffix += 1
-            target_split = os.path.splitext(target_file_path)
-            target_file = "%s-%d%s" % (target_split[0], suffix, target_split[1])
+        printer.line(out_line)
+        self.process_xmp(filename, target_file_name, suffix, output)
+
+        self.lock.release()
+
+        suffix += 1
+        target_split = os.path.splitext(target_file_path)
+        target_file = "%s-%d%s" % (target_split[0], suffix, target_split[1])
 
     def get_file_name_and_path(self, filename):
         """
