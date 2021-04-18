@@ -221,7 +221,7 @@ class Phockup():
 
         lock.release()
 
-        if action:
+        if self.action:
             try:
                 printer.line('%s => %s' % (filename, target_file))
                 os.makedirs(output, exist_ok=True)
