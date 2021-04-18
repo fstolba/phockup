@@ -15,6 +15,8 @@ ignored_files = (".DS_Store", "Thumbs.db")
 
 
 class Phockup():
+    lock = threading.Lock()
+
     def __init__(self, input_dir, output_dir, **args):
         input_dir = os.path.expanduser(input_dir)
         output_dir = os.path.expanduser(output_dir)
@@ -24,7 +26,6 @@ class Phockup():
         if output_dir.endswith(os.path.sep):
             output_dir = output_dir[:-1]
 
-        self.lock = threading.Lock()
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.dir_format = args.get('dir_format') or os.path.sep.join(['%Y', '%m', '%d'])
@@ -83,21 +84,19 @@ class Phockup():
         num_files = len(files)
         num_threads = min(self.threads, num_files)
 
-        if num_threads > 1:
-            threads = []
-            for i in range(0, num_threads):
-                files_part = files[i::num_threads]
-                thread = threading.Thread(target=self.process_file_worker, args=(files_part,))
-                threads.append(thread)
-                thread.start()
+
+        threads = []
+        for i in range(0, num_threads):
+            files_part = files[i::num_threads]
+            thread = threading.Thread(target=self.process_file_worker, args=(files_part,))
+            threads.append(thread)
+            thread.start()
 
             for thread in threads:
                 thread.join()
 
-            printer.line('%s files processed using %s threads' % (num_files, num_threads))
-        else:
-            self.process_file_worker(files)
-            printer.line('%s file(s) processed' % (num_files))
+        printer.line('%s files processed using %s threads' % (num_files, num_threads))
+
 
     def process_file_worker(self, files):
         """
@@ -185,14 +184,19 @@ class Phockup():
         suffix = 1
         target_file = target_file_path
 
-        self.lock.acquire()
+        with Phockup.lock:
+            out_line = '{}'''.format(filename)
 
-        out_line = '{}'''.format(filename)
+            while os.path.isfile(target_file):
+                if self.checksum(filename) == self.checksum(target_file):
+                    out_line += ' => skipped, duplicated file {}'.format(target_file)
+                    printer.line(out_line)
+                    return
+                else:
+                    target_split = os.path.splitext(target_file_path)
+                    target_file = "%s-%d%s" % (target_split[0], suffix, target_split[1])
+                    suffix += 1
 
-        if os.path.isfile(target_file):
-            if self.checksum(filename) == self.checksum(target_file):
-                out_line += ' => skipped, duplicated file {}'.format(target_file)
-        else:
             if self.move:
                 try:
                     if not self.dry_run:
@@ -215,12 +219,6 @@ class Phockup():
 
         printer.line(out_line)
         self.process_xmp(filename, target_file_name, suffix, output)
-
-        self.lock.release()
-
-        suffix += 1
-        target_split = os.path.splitext(target_file_path)
-        target_file = "%s-%d%s" % (target_split[0], suffix, target_split[1])
 
     def get_file_name_and_path(self, filename):
         """
