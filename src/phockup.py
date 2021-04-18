@@ -76,28 +76,28 @@ class Phockup():
 
                 files_temp.append(filepath)
 
-                files = files_temp
-                files.sort()
-                num_files = len(files)
-                num_threads = min(self.threads, num_files)
+        files = files_temp
+        files.sort()
+        num_files = len(files)
+        num_threads = min(self.threads, num_files)
 
-                if num_threads > 1:
-                    threads = []
-                    for i in range(0, num_threads):
-                        files_part = files[i::num_threads]
-                        thread = threading.Thread(target=self.process_file_worker, args=(files_part,))
-                        threads.append(thread)
-                        thread.start()
+        if num_threads > 1:
+            threads = []
+            for i in range(0, num_threads):
+                files_part = files[i::num_threads]
+                thread = threading.Thread(target=self.process_file_worker, args=(files_part,))
+                threads.append(thread)
+                thread.start()
 
-                    for thread in threads:
-                        thread.join()
+            for thread in threads:
+                thread.join()
 
-                    printer.line('%s files processed using %s threads' % (num_files, num_threads))
-                else:
-                    self.process_file_worker(files)
-                    printer.line('%s file(s) processed' % (num_files))
-                if root.count(os.sep) >= self.stop_depth:
-                    del dirnames[:]
+            printer.line('%s files processed using %s threads' % (num_files, num_threads))
+        else:
+            self.process_file_worker(files)
+            printer.line('%s file(s) processed' % (num_files))
+        if root.count(os.sep) >= self.stop_depth:
+            del dirnames[:]
 
     def process_file_worker(self, files):
         """
@@ -180,20 +180,20 @@ class Phockup():
         if str.endswith(filename, '.xmp'):
             return None
 
-        printer.line(filename, True)
+        lock = threading.Lock()
+        lock.acquire()
+
+        out_line = '{}'''.format(filename)
 
         output, target_file_name, target_file_path = self.get_file_name_and_path(filename)
 
         suffix = 1
         target_file = target_file_path
 
-        lock = threading.Lock()
-        lock.acquire()
-
         while True:
             if os.path.isfile(target_file):
                 if self.checksum(filename) == self.checksum(target_file):
-                    printer.line(' => skipped, duplicated file %s' % target_file)
+                    out_line += ' => skipped, duplicated file {}'.format(target_file)
                     break
             else:
                 if self.move:
@@ -201,7 +201,7 @@ class Phockup():
                         if not self.dry_run:
                             shutil.move(filename, target_file)
                     except FileNotFoundError:
-                        printer.line(' => skipped, no such file or directory')
+                        out_line += ' => skipped, no such file or directory'
                         break
                 elif self.link and not self.dry_run:
                     os.link(filename, target_file)
@@ -210,10 +210,11 @@ class Phockup():
                         if not self.dry_run:
                             shutil.copy2(filename, target_file)
                     except FileNotFoundError:
-                        printer.line(' => skipped, no such file or directory')
+                        out_line += ' => skipped, no such file or directory'
                         break
 
-                printer.line(' => %s' % target_file)
+                out_line += ' => {}'.format(target_file)
+                printer.line(out_line)
                 self.process_xmp(filename, target_file_name, suffix, output)
                 break
 

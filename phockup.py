@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-import getopt
+import argparse
 import os
 import re
 import sys
 
 from src.date import Date
 from src.dependency import check_dependencies
-from src.help import help
 from src.phockup import Phockup
 from src.printer import Printer
 
@@ -56,12 +55,14 @@ Supported formats:
     m    - Jul, Aug, Sept ...
     DD   - 27, 28, 29 ... (day of month)
     DDD  - 123, 158, 365 ... (day of year)
-
-    try:
-        opts, args = getopt.getopt(argv[2:], "d:r:mltoh", ["date=", "regex=", "move", "link", "original-names", "timestamp", "help"])
-    except getopt.GetoptError:
-        help(version)
-        sys.exit(2)
+    
+    Example:
+        YYYY/MM/DD -> 2011/07/17
+        YYYY/M/DD  -> 2011/July/17
+        YYYY/m/DD  -> 2011/Jul/17
+        YY/m-DD    -> 11/Jul-17
+            """,
+    )
 
     exclusive_group = parser.add_mutually_exclusive_group()
 
@@ -136,7 +137,7 @@ nevertheless it can be useful if no other date information can be obtained.
         action="store",
         type=int,
         default=os.cpu_count(),
-        choices=range(1,129),
+        choices=range(1, 129),
         help="Number of threads to use (defaults to number of CPU cores).",
     )
 
@@ -159,7 +160,6 @@ To get all date fields available for a file, do:
     exiftool -time:all -mimetype -j <file>
         """,
     )
-
 
     parser.add_argument(
         "-q",
