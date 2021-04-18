@@ -73,8 +73,9 @@ class Phockup():
                     continue
 
                 filepath = os.path.join(root, filename)
-
                 files_temp.append(filepath)
+            if root.count(os.sep) >= self.stop_depth:
+                del dirnames[:]
 
         files = files_temp
         files.sort()
@@ -96,8 +97,6 @@ class Phockup():
         else:
             self.process_file_worker(files)
             printer.line('%s file(s) processed' % (num_files))
-        if root.count(os.sep) >= self.stop_depth:
-            del dirnames[:]
 
     def process_file_worker(self, files):
         """
