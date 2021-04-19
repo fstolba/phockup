@@ -102,8 +102,8 @@ class Phockup():
             threads.append(thread)
             thread.start()
 
-            for thread in threads:
-                thread.join()
+        for thread in threads:
+            thread.join()
 
         printer.line('%s files processed using %s threads' % (num_files, num_threads))
 

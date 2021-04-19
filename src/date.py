@@ -29,7 +29,9 @@ class Date():
                         date_object["second"] if date_object.get("second") else 0)
 
     def from_exif(self, exif, timestamp=None, user_regex=None, date_field=None):
-        if date_field:
+        if " " in date_field:
+            keys = date_field.split(" ")
+        elif date_field:
             keys = [date_field]
         else:
             keys = ['SubSecCreateDate', 'SubSecDateTimeOriginal', 'CreateDate', 'DateTimeOriginal']
