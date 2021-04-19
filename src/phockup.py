@@ -198,7 +198,6 @@ class Phockup():
         lock.acquire()
 
         targets = self.targets
-        action = False
 
         while True:
             if os.path.isfile(target_file):
@@ -208,11 +207,10 @@ class Phockup():
             if target_source:
                 if self.checksum(filename) == self.checksum(target_source):
                     printer.line('%s => skipped, duplicated file %s' % (filename, target_file))
-                    break
+                    return
 
             else:
                 targets[target_file] = filename
-                action = True
                 break
 
             suffix += 1
@@ -229,7 +227,6 @@ class Phockup():
                 self.process_xmp(filename, target_file_name, suffix, output)
             except FileNotFoundError:
                 printer.line('%s => skipped, no such file or directory' % filename)
-
 
     def get_file_name_and_path(self, filename):
         """
