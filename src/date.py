@@ -42,8 +42,6 @@ class Date():
         for key in keys:
             if key in exif:
                 datestr = exif[key]
-                if datestr.startswith('2002'):
-                    datestr = None
                 break
 
         # sometimes exif data can return all zeros
