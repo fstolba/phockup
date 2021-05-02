@@ -55,13 +55,13 @@ Supported formats:
     m    - Jul, Aug, Sept ...
     DD   - 27, 28, 29 ... (day of month)
     DDD  - 123, 158, 365 ... (day of year)
-    
+
 Example:
     YYYY/MM/DD -> 2011/07/17
     YYYY/M/DD  -> 2011/July/17
     YYYY/m/DD  -> 2011/Jul/17
     YY/m-DD    -> 11/Jul-17
-""",
+        """,
     )
 
     exclusive_group = parser.add_mutually_exclusive_group()
