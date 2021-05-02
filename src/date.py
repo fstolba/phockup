@@ -29,10 +29,11 @@ class Date():
                         date_object["second"] if date_object.get("second") else 0)
 
     def from_exif(self, exif, timestamp=None, user_regex=None, date_field=None):
-        if " " in date_field:
-            keys = date_field.split(" ")
-        elif date_field:
-            keys = [date_field]
+        if date_field:
+            if " " in date_field:
+                keys = date_field.split(" ")
+            else:
+                keys = [date_field]
         else:
             keys = ['SubSecCreateDate', 'SubSecDateTimeOriginal', 'CreateDate', 'DateTimeOriginal']
 
@@ -41,6 +42,8 @@ class Date():
         for key in keys:
             if key in exif:
                 datestr = exif[key]
+                if datestr.startswith('2002'):
+                    datestr = None
                 break
 
         # sometimes exif data can return all zeros
