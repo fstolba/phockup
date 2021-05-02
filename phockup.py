@@ -56,12 +56,12 @@ Supported formats:
     DD   - 27, 28, 29 ... (day of month)
     DDD  - 123, 158, 365 ... (day of year)
     
-    Example:
-        YYYY/MM/DD -> 2011/07/17
-        YYYY/M/DD  -> 2011/July/17
-        YYYY/m/DD  -> 2011/Jul/17
-        YY/m-DD    -> 11/Jul-17
-            """,
+Example:
+    YYYY/MM/DD -> 2011/07/17
+    YYYY/M/DD  -> 2011/July/17
+    YYYY/m/DD  -> 2011/Jul/17
+    YY/m-DD    -> 11/Jul-17
+""",
     )
 
     exclusive_group = parser.add_mutually_exclusive_group()
@@ -125,7 +125,7 @@ nevertheless it can be useful if no other date information can be obtained.
         action="store",
         type=re.compile,
         help="""Specify date format for date extraction from filenames if there is no EXIF date information.
-    Example:
+Example:
     {regex}
     can be used to extract the date from file names like the following IMG_27.01.2015-19.20.00.jpg.
         """,
