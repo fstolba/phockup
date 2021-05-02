@@ -137,7 +137,8 @@ nevertheless it can be useful if no other date information can be obtained.
         action="store",
         type=int,
         default=os.cpu_count(),
-        choices=range(1, 129),
+        choices=range(1, 255),
+        metavar="1-255",
         help="Number of threads to use (defaults to number of CPU cores).",
     )
 
